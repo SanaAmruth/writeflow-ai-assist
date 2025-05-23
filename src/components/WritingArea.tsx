@@ -39,6 +39,16 @@ const WritingArea = ({ content, onContentChange, onTextSelect, title = 'Your Blo
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
       onTextSelect(selection.toString());
+    } else {
+      // Reset the selected text when clicking elsewhere
+      onTextSelect('');
+    }
+  };
+
+  const handleKeyUp = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      onTextSelect(selection.toString());
     }
   };
 
@@ -55,6 +65,7 @@ const WritingArea = ({ content, onContentChange, onTextSelect, title = 'Your Blo
         contentEditable
         onInput={handleInput}
         onMouseUp={handleMouseUp}
+        onKeyUp={handleKeyUp}
         onFocus={handleFocus}
         className="min-h-[450px] outline-none prose prose-lg max-w-none focus:prose-purple"
         style={{

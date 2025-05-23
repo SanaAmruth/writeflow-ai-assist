@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import WritingArea from './WritingArea';
 import AIChat from './AIChat';
 import TemplateSelector from './TemplateSelector';
@@ -14,13 +14,20 @@ const BlogEditor = () => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [blogContent, setBlogContent] = useState('');
   const [selectedText, setSelectedText] = useState('');
-  const [blogTitle, setBlogTitle] = useState('Your Blog Post');
+  const [blogTitle, setBlogTitle] = useState('Dr. APJ Abdul Kalam: The People\'s President');
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
 
+  // Pre-populate the blog content with Abdul Kalam article
+  useEffect(() => {
+    if (!blogContent) {
+      setBlogContent(getAbdulKalamBlog());
+    }
+  }, [blogContent]);
+
   const formatText = (format: string) => {
     if (!selectedText) {
-      toast("Please select text to format");
+      toast.error("Please select text to format");
       return;
     }
     
@@ -44,9 +51,12 @@ const BlogEditor = () => {
       default:
         formattedText = selectedText;
     }
-    
-    setBlogContent(blogContent.replace(selectedText, formattedText));
-    setSelectedText('');
+
+    // Find and replace selected text in the blog content
+    if (blogContent.includes(selectedText)) {
+      setBlogContent(blogContent.replace(selectedText, formattedText));
+      setSelectedText('');
+    }
   };
 
   const handlePublish = () => {
@@ -62,6 +72,40 @@ const BlogEditor = () => {
   const copyLinkToClipboard = () => {
     navigator.clipboard.writeText(publishedUrl);
     toast.success("Link copied to clipboard!");
+  };
+
+  // Function to provide the Abdul Kalam blog content
+  const getAbdulKalamBlog = () => {
+    return `<h1>Dr. APJ Abdul Kalam: The People's President and Visionary Scientist</h1>
+
+<p>Dr. Avul Pakir Jainulabdeen Abdul Kalam, fondly remembered as the <strong>"People's President"</strong> and the <strong>"Missile Man of India,"</strong> was a remarkable individual whose contributions to India spanned science, education, and leadership. Born on October 15, 1931, in Rameswaram, Tamil Nadu, Dr. Kalam's journey from a humble beginning to becoming India's 11th President is a testament to his brilliance, perseverance, and unwavering commitment to national development.</p>
+
+<h2>Early Life and Education</h2>
+<p>Coming from a modest background, young Kalam displayed an insatiable curiosity and strong work ethic from an early age. Despite financial constraints, he pursued his education with passion, graduating in physics from Saint Joseph's College and later specializing in aerospace engineering from the Madras Institute of Technology. These formative years laid the foundation for his future scientific endeavors.</p>
+
+<h2>Contributions to Indian Space and Defense Programs</h2>
+<p>Dr. Kalam's career at the <strong>Defence Research and Development Organisation (DRDO)</strong> and later at the <strong>Indian Space Research Organisation (ISRO)</strong> marked the beginning of India's self-reliance in defense technology. As the chief architect of India's first satellite launch vehicle (SLV-III), he successfully deployed the Rohini satellite in near-Earth orbit in 1980, establishing India's presence in space technology.</p>
+
+<p>His most significant contribution came as the leader of India's missile development program. Under his guidance, India developed strategic missiles like <strong>Agni</strong> and <strong>Prithvi</strong>, earning him the title "Missile Man of India." His leadership in the Pokhran-II nuclear tests in 1998 further solidified India's position as a nuclear state.</p>
+
+<h2>Presidency and Vision for India</h2>
+<p>Dr. Kalam's presidency from 2002 to 2007 was characterized by his vision of transforming India into a developed nation by 2020. His concept of <strong>"PURA"</strong> (Providing Urban Amenities in Rural Areas) aimed at bridging the urban-rural divide and fostering inclusive growth. As President, he was known for his accessibility, simplicity, and deep connection with the youth, whom he saw as the architects of future India.</p>
+
+<h2>Legacy as an Educator and Inspiration</h2>
+<p>Post-presidency, Dr. Kalam devoted himself to his passion for teaching and inspiring the youth. He traveled extensively across India, visiting schools and colleges, igniting young minds with his speeches about dreams, innovation, and nation-building. His books, particularly <em>"Wings of Fire"</em> and <em>"Ignited Minds,"</em> continue to inspire millions worldwide.</p>
+
+<p>Dr. Kalam's vision extended beyond scientific advancements. He emphasized the importance of ethical leadership, sustainable development, and inclusive growth. His "Vision 2020" outlined a roadmap for India's development, focusing on education, healthcare, infrastructure, and technology.</p>
+
+<h2>Personal Life and Values</h2>
+<p>Dr. Kalam led a simple and disciplined life, embodying the values of integrity, humility, and dedication. He was a vegetarian, played the veena (a traditional Indian instrument), wrote poetry, and practiced both Islam and Hinduism, symbolizing India's secular ethos. His personal library reflected his diverse interests, from science and technology to philosophy and spirituality.</p>
+
+<h2>Final Journey</h2>
+<p>On July 27, 2015, while doing what he loved most—addressing students at IIM Shillong—Dr. Kalam collapsed and passed away due to a cardiac arrest. His death was mourned across India and the world, with tributes pouring in from leaders, scientists, and citizens alike.</p>
+
+<h2>Conclusion</h2>
+<p>Dr. APJ Abdul Kalam's life journey epitomizes the power of dreams, determination, and dedication. From a newspaper boy to a renowned scientist and the President of the world's largest democracy, his life inspires us to dream big and work relentlessly toward our goals. His vision for India continues to guide the nation's development trajectory.</p>
+
+<p>In his own words, <strong>"Dream, dream, dream. Dreams transform into thoughts and thoughts result in action."</strong> This philosophy continues to resonate with millions, making Dr. Kalam immortal in the hearts of people, especially the youth whom he so dearly loved and inspired.</p>`;
   };
 
   return (
