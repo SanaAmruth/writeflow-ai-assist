@@ -1,0 +1,188 @@
+
+import React, { useState } from 'react';
+import { Send, Sparkles, Copy, Check } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface AIChatProps {
+  selectedText: string;
+  onApplyEdit: (editedText: string) => void;
+}
+
+const AIChat = ({ selectedText, onApplyEdit }: AIChatProps) => {
+  const [messages, setMessages] = useState<Array<{ type: 'user' | 'ai'; content: string; action?: string }>>([
+    {
+      type: 'ai',
+      content: "Hi! I'm your AI writing assistant. I can help you:\n\n• Generate blog posts from topics\n• Edit selected text with natural language\n• Suggest headlines and improvements\n• Rewrite content in different tones\n\nJust tell me what you need!"
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const { toast } = useToast();
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = input;
+    setInput('');
+    setMessages(prev => [...prev, { type: 'user', content: userMessage }]);
+    setIsGenerating(true);
+
+    // Simulate AI response
+    setTimeout(() => {
+      let aiResponse = '';
+      let action = '';
+
+      if (selectedText) {
+        // Editing mode
+        if (userMessage.toLowerCase().includes('bold')) {
+          aiResponse = `I'll make the selected text bold: <strong>${selectedText}</strong>`;
+          action = `<strong>${selectedText}</strong>`;
+        } else if (userMessage.toLowerCase().includes('heading')) {
+          aiResponse = `I'll turn the selected text into a heading: <h2>${selectedText}</h2>`;
+          action = `<h2>${selectedText}</h2>`;
+        } else if (userMessage.toLowerCase().includes('concise')) {
+          const conciseText = selectedText.length > 50 ? selectedText.substring(0, 50) + '...' : selectedText;
+          aiResponse = `Here's a more concise version: "${conciseText}"`;
+          action = conciseText;
+        } else {
+          aiResponse = `I'll help you edit: "${selectedText}". Here's an improved version with better flow and clarity.`;
+          action = selectedText + ' (Enhanced with better clarity and flow)';
+        }
+      } else {
+        // Content generation mode
+        if (userMessage.toLowerCase().includes('blog about') || userMessage.toLowerCase().includes('write about')) {
+          const topic = userMessage.split(/blog about|write about/i)[1]?.trim() || 'technology';
+          aiResponse = `I'll generate a blog post about ${topic}. Here's a complete article:`;
+          action = `<h1>The Future of ${topic}</h1>
+
+<p>In today's rapidly evolving digital landscape, ${topic} continues to shape our world in unprecedented ways. This comprehensive guide explores the key aspects and future implications.</p>
+
+<h2>Introduction</h2>
+<p>As we advance into a new era, understanding ${topic} becomes crucial for both individuals and businesses alike.</p>
+
+<h2>Key Benefits</h2>
+<ul>
+<li>Enhanced efficiency and productivity</li>
+<li>Improved user experience</li>
+<li>Cost-effective solutions</li>
+<li>Scalable implementation</li>
+</ul>
+
+<h2>Conclusion</h2>
+<p>The future of ${topic} looks promising, with endless possibilities for innovation and growth. By staying informed and adapting to these changes, we can harness its full potential.</p>`;
+        } else if (userMessage.toLowerCase().includes('headline')) {
+          aiResponse = "Here are some engaging headline suggestions:";
+          action = "• 10 Game-Changing Strategies That Will Transform Your Business\n• The Ultimate Guide to Mastering Modern Challenges\n• Why Industry Leaders Are Making This Surprising Move";
+        } else {
+          aiResponse = "I'm here to help! You can ask me to generate blog content, edit selected text, or suggest improvements. Try highlighting some text and asking me to make it bold, turn it into a heading, or rewrite it in a different tone.";
+        }
+      }
+
+      setMessages(prev => [...prev, { type: 'ai', content: aiResponse, action }]);
+      setIsGenerating(false);
+    }, 1500);
+  };
+
+  const handleApplyEdit = (action: string) => {
+    onApplyEdit(action);
+    toast({
+      title: "Edit Applied",
+      description: "Your text has been updated successfully!",
+    });
+  };
+
+  const handleCopy = (content: string, id: number) => {
+    navigator.clipboard.writeText(content);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+    toast({
+      title: "Copied to clipboard",
+      description: "Content has been copied to your clipboard!",
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-[600px] flex flex-col">
+      <div className="border-b border-gray-200 p-4">
+        <div className="flex items-center space-x-2">
+          <Sparkles className="w-5 h-5 text-purple-600" />
+          <h3 className="font-semibold text-gray-900">AI Assistant</h3>
+        </div>
+        {selectedText && (
+          <div className="mt-2 p-2 bg-purple-50 rounded text-sm text-purple-700">
+            Selected: "{selectedText.substring(0, 30)}..."
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message, index) => (
+          <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] p-3 rounded-lg ${
+              message.type === 'user' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-gray-100 text-gray-900'
+            }`}>
+              <div className="whitespace-pre-wrap text-sm">
+                {message.content}
+              </div>
+              {message.action && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => handleApplyEdit(message.action!)}
+                      className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors"
+                    >
+                      Apply Edit
+                    </button>
+                    <button
+                      onClick={() => handleCopy(message.action!, index)}
+                      className="text-xs text-gray-600 hover:text-gray-800 flex items-center space-x-1"
+                    >
+                      {copiedId === index ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedId === index ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        
+        {isGenerating && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 text-gray-900 p-3 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                <span className="text-sm">AI is thinking...</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-gray-200 p-4">
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            placeholder={selectedText ? "How should I edit this text?" : "Ask me to write a blog about..."}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isGenerating}
+            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white p-2 rounded-lg transition-colors"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AIChat;
