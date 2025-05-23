@@ -5,9 +5,10 @@ interface WritingAreaProps {
   content: string;
   onContentChange: (content: string) => void;
   onTextSelect: (selectedText: string) => void;
+  title?: string;
 }
 
-const WritingArea = ({ content, onContentChange, onTextSelect }: WritingAreaProps) => {
+const WritingArea = ({ content, onContentChange, onTextSelect, title = 'Your Blog Post' }: WritingAreaProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isEmpty, setIsEmpty] = useState(!content);
 

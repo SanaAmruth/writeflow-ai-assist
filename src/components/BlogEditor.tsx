@@ -1,14 +1,68 @@
+
 import React, { useState } from 'react';
 import WritingArea from './WritingArea';
 import AIChat from './AIChat';
 import TemplateSelector from './TemplateSelector';
-import { MessageSquare, FileText, Sparkles } from 'lucide-react';
+import { MessageSquare, FileText, Sparkles, Bold, Italic, Heading1, Heading2, Link, Share2 } from 'lucide-react';
+import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Input } from './ui/input';
+import { toast } from './ui/sonner';
 
 const BlogEditor = () => {
   const [showChat, setShowChat] = useState(true); // Set to true by default
   const [showTemplates, setShowTemplates] = useState(false);
   const [blogContent, setBlogContent] = useState('');
   const [selectedText, setSelectedText] = useState('');
+  const [blogTitle, setBlogTitle] = useState('Your Blog Post');
+  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState('');
+
+  const formatText = (format: string) => {
+    if (!selectedText) {
+      toast("Please select text to format");
+      return;
+    }
+    
+    let formattedText = '';
+    switch(format) {
+      case 'bold':
+        formattedText = `<strong>${selectedText}</strong>`;
+        break;
+      case 'italic':
+        formattedText = `<em>${selectedText}</em>`;
+        break;
+      case 'h1':
+        formattedText = `<h1>${selectedText}</h1>`;
+        break;
+      case 'h2':
+        formattedText = `<h2>${selectedText}</h2>`;
+        break;
+      case 'link':
+        formattedText = `<a href="#">${selectedText}</a>`;
+        break;
+      default:
+        formattedText = selectedText;
+    }
+    
+    setBlogContent(blogContent.replace(selectedText, formattedText));
+    setSelectedText('');
+  };
+
+  const handlePublish = () => {
+    // In a real app, this would make an API call to publish the blog
+    // Here we'll simulate it with a generated URL
+    const randomId = Math.random().toString(36).substring(2, 10);
+    const fakeUrl = `https://yourblog.com/posts/${randomId}`;
+    setPublishedUrl(fakeUrl);
+    setIsPublishDialogOpen(true);
+    toast.success("Blog published successfully!");
+  };
+
+  const copyLinkToClipboard = () => {
+    navigator.clipboard.writeText(publishedUrl);
+    toast.success("Link copied to clipboard!");
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -18,8 +72,55 @@ const BlogEditor = () => {
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
             <div className="border-b border-gray-200 p-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Your Blog Post</h2>
+                <Input 
+                  type="text"
+                  value={blogTitle}
+                  onChange={(e) => setBlogTitle(e.target.value)}
+                  className="text-lg font-semibold text-gray-900 border-none focus-visible:ring-0 px-0 max-w-[300px]"
+                />
                 <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 border-r pr-2 mr-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => formatText('bold')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Bold className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => formatText('italic')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Italic className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => formatText('h1')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Heading1 className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => formatText('h2')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Heading2 className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => formatText('link')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Link className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <button
                     onClick={() => setShowTemplates(!showTemplates)}
                     className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -34,6 +135,14 @@ const BlogEditor = () => {
                     <MessageSquare className="w-4 h-4" />
                     <span className="text-sm">AI Chat</span>
                   </button>
+                  <Button
+                    onClick={handlePublish}
+                    variant="default"
+                    className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span className="text-sm">Publish</span>
+                  </Button>
                 </div>
               </div>
               {showTemplates && (
@@ -49,6 +158,7 @@ const BlogEditor = () => {
               content={blogContent} 
               onContentChange={setBlogContent}
               onTextSelect={setSelectedText}
+              title={blogTitle}
             />
           </div>
         </div>
@@ -89,6 +199,22 @@ const BlogEditor = () => {
           )}
         </div>
       </div>
+
+      {/* Publish Dialog */}
+      <Dialog open={isPublishDialogOpen} onOpenChange={setIsPublishDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Blog Published Successfully!</DialogTitle>
+            <DialogDescription>
+              Your blog post "{blogTitle}" is now live. Share it with this link:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 mt-4">
+            <Input value={publishedUrl} readOnly className="flex-1" />
+            <Button onClick={copyLinkToClipboard}>Copy</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
