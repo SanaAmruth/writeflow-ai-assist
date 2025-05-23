@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import WritingArea from './WritingArea';
 import AIChat from './AIChat';

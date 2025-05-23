@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Send, Sparkles, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -73,56 +72,56 @@ const AIChat = ({ selectedText, onApplyEdit }: AIChatProps) => {
           
           // Generate content based on the topic
           if (topic.toLowerCase() === 'abdul kalam') {
-            aiResponse = `I've written a blog post about Dr. APJ Abdul Kalam. You can apply it to the editor.`;
-            action = `<h1>Dr. APJ Abdul Kalam: The People's President and Visionary Scientist</h1>
+            aiResponse = `I've written a blog post about Dr. APJ Abdul Kalam with proper formatting. You can apply it to the editor.`;
+            action = `<h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #333;">Dr. APJ Abdul Kalam: The People's President and Visionary Scientist</h1>
 
-<p>Dr. Avul Pakir Jainulabdeen Abdul Kalam, fondly remembered as the "People's President" and the "Missile Man of India," was a remarkable individual whose contributions to India spanned science, education, and leadership. Born on October 15, 1931, in Rameswaram, Tamil Nadu, Dr. Kalam's journey from a humble beginning to becoming India's 11th President is a testament to his brilliance, perseverance, and unwavering commitment to national development.</p>
+<p>Dr. Avul Pakir Jainulabdeen Abdul Kalam, fondly remembered as the <strong>"People's President"</strong> and the <strong>"Missile Man of India,"</strong> was a remarkable individual whose contributions to India spanned science, education, and leadership. Born on October 15, 1931, in Rameswaram, Tamil Nadu, Dr. Kalam's journey from a humble beginning to becoming India's 11th President is a testament to his brilliance, perseverance, and unwavering commitment to national development.</p>
 
-<h2>Early Life and Education</h2>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Early Life and Education</h2>
 <p>Coming from a modest background, young Kalam displayed an insatiable curiosity and strong work ethic from an early age. Despite financial constraints, he pursued his education with passion, graduating in physics from Saint Joseph's College and later specializing in aerospace engineering from the Madras Institute of Technology. These formative years laid the foundation for his future scientific endeavors.</p>
 
-<h2>Contributions to Indian Space and Defense Programs</h2>
-<p>Dr. Kalam's career at the Defence Research and Development Organisation (DRDO) and later at the Indian Space Research Organisation (ISRO) marked the beginning of India's self-reliance in defense technology. As the chief architect of India's first satellite launch vehicle (SLV-III), he successfully deployed the Rohini satellite in near-Earth orbit in 1980, establishing India's presence in space technology.</p>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Contributions to Indian Space and Defense Programs</h2>
+<p>Dr. Kalam's career at the <strong>Defence Research and Development Organisation (DRDO)</strong> and later at the <strong>Indian Space Research Organisation (ISRO)</strong> marked the beginning of India's self-reliance in defense technology. As the chief architect of India's first satellite launch vehicle (SLV-III), he successfully deployed the Rohini satellite in near-Earth orbit in 1980, establishing India's presence in space technology.</p>
 
-<p>His most significant contribution came as the leader of India's missile development program. Under his guidance, India developed strategic missiles like Agni and Prithvi, earning him the title "Missile Man of India." His leadership in the Pokhran-II nuclear tests in 1998 further solidified India's position as a nuclear state.</p>
+<p>His most significant contribution came as the leader of India's missile development program. Under his guidance, India developed strategic missiles like <strong>Agni</strong> and <strong>Prithvi</strong>, earning him the title "Missile Man of India." His leadership in the Pokhran-II nuclear tests in 1998 further solidified India's position as a nuclear state.</p>
 
-<h2>Presidency and Vision for India</h2>
-<p>Dr. Kalam's presidency from 2002 to 2007 was characterized by his vision of transforming India into a developed nation by 2020. His concept of "PURA" (Providing Urban Amenities in Rural Areas) aimed at bridging the urban-rural divide and fostering inclusive growth. As President, he was known for his accessibility, simplicity, and deep connection with the youth, whom he saw as the architects of future India.</p>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Presidency and Vision for India</h2>
+<p>Dr. Kalam's presidency from 2002 to 2007 was characterized by his vision of transforming India into a developed nation by 2020. His concept of <strong>"PURA"</strong> (Providing Urban Amenities in Rural Areas) aimed at bridging the urban-rural divide and fostering inclusive growth. As President, he was known for his accessibility, simplicity, and deep connection with the youth, whom he saw as the architects of future India.</p>
 
-<h2>Legacy as an Educator and Inspiration</h2>
-<p>Post-presidency, Dr. Kalam devoted himself to his passion for teaching and inspiring the youth. He traveled extensively across India, visiting schools and colleges, igniting young minds with his speeches about dreams, innovation, and nation-building. His books, particularly "Wings of Fire" and "Ignited Minds," continue to inspire millions worldwide.</p>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Legacy as an Educator and Inspiration</h2>
+<p>Post-presidency, Dr. Kalam devoted himself to his passion for teaching and inspiring the youth. He traveled extensively across India, visiting schools and colleges, igniting young minds with his speeches about dreams, innovation, and nation-building. His books, particularly <em>"Wings of Fire"</em> and <em>"Ignited Minds,"</em> continue to inspire millions worldwide.</p>
 
 <p>Dr. Kalam's vision extended beyond scientific advancements. He emphasized the importance of ethical leadership, sustainable development, and inclusive growth. His "Vision 2020" outlined a roadmap for India's development, focusing on education, healthcare, infrastructure, and technology.</p>
 
-<h2>Personal Life and Values</h2>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Personal Life and Values</h2>
 <p>Dr. Kalam led a simple and disciplined life, embodying the values of integrity, humility, and dedication. He was a vegetarian, played the veena (a traditional Indian instrument), wrote poetry, and practiced both Islam and Hinduism, symbolizing India's secular ethos. His personal library reflected his diverse interests, from science and technology to philosophy and spirituality.</p>
 
-<h2>Final Journey</h2>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Final Journey</h2>
 <p>On July 27, 2015, while doing what he loved most—addressing students at IIM Shillong—Dr. Kalam collapsed and passed away due to a cardiac arrest. His death was mourned across India and the world, with tributes pouring in from leaders, scientists, and citizens alike.</p>
 
-<h2>Conclusion</h2>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Conclusion</h2>
 <p>Dr. APJ Abdul Kalam's life journey epitomizes the power of dreams, determination, and dedication. From a newspaper boy to a renowned scientist and the President of the world's largest democracy, his life inspires us to dream big and work relentlessly toward our goals. His vision for India continues to guide the nation's development trajectory.</p>
 
-<p>In his own words, "Dream, dream, dream. Dreams transform into thoughts and thoughts result in action." This philosophy continues to resonate with millions, making Dr. Kalam immortal in the hearts of people, especially the youth whom he so dearly loved and inspired.</p>`;
+<p>In his own words, <strong>"Dream, dream, dream. Dreams transform into thoughts and thoughts result in action."</strong> This philosophy continues to resonate with millions, making Dr. Kalam immortal in the hearts of people, especially the youth whom he so dearly loved and inspired.</p>`;
           } else {
-            aiResponse = `I'll generate a blog post about ${topic}. Here's a complete article:`;
-            action = `<h1>The Future of ${topic}</h1>
+            aiResponse = `I'll generate a properly formatted blog post about ${topic}. Here's a complete article:`;
+            action = `<h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #333;">The Future of ${topic}</h1>
 
-<p>In today's rapidly evolving digital landscape, ${topic} continues to shape our world in unprecedented ways. This comprehensive guide explores the key aspects and future implications.</p>
+<p>In today's rapidly evolving digital landscape, <strong>${topic}</strong> continues to shape our world in unprecedented ways. This comprehensive guide explores the key aspects and future implications.</p>
 
-<h2>Introduction</h2>
-<p>As we advance into a new era, understanding ${topic} becomes crucial for both individuals and businesses alike.</p>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Introduction</h2>
+<p>As we advance into a new era, understanding <strong>${topic}</strong> becomes crucial for both individuals and businesses alike.</p>
 
-<h2>Key Benefits</h2>
-<ul>
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Key Benefits</h2>
+<ul style="margin-left: 1.5rem; list-style-type: disc;">
 <li>Enhanced efficiency and productivity</li>
 <li>Improved user experience</li>
 <li>Cost-effective solutions</li>
 <li>Scalable implementation</li>
 </ul>
 
-<h2>Conclusion</h2>
-<p>The future of ${topic} looks promising, with endless possibilities for innovation and growth. By staying informed and adapting to these changes, we can harness its full potential.</p>`;
+<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Conclusion</h2>
+<p>The future of <strong>${topic}</strong> looks promising, with endless possibilities for innovation and growth. By staying informed and adapting to these changes, we can harness its full potential.</p>`;
           }
           
         } else if (userMessage.toLowerCase().includes('headline')) {
