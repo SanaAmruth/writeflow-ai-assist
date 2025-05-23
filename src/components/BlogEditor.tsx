@@ -6,7 +6,7 @@ import TemplateSelector from './TemplateSelector';
 import { MessageSquare, FileText, Sparkles } from 'lucide-react';
 
 const BlogEditor = () => {
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(true); // Set to true by default
   const [showTemplates, setShowTemplates] = useState(false);
   const [blogContent, setBlogContent] = useState('');
   const [selectedText, setSelectedText] = useState('');
@@ -60,10 +60,12 @@ const BlogEditor = () => {
             <AIChat 
               selectedText={selectedText}
               onApplyEdit={(editedText) => {
-                // Apply the edited text back to the blog content
                 if (selectedText) {
                   setBlogContent(blogContent.replace(selectedText, editedText));
                   setSelectedText('');
+                } else {
+                  // If no text is selected, append or set the content
+                  setBlogContent(editedText);
                 }
               }}
             />
