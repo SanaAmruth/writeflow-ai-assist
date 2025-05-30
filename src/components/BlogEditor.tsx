@@ -241,9 +241,14 @@ const BlogEditor = () => {
                   setShowChat(true); // Keep chat open after applying edit
                 }}
               />
-            </div>
           ) : (
             // Placeholder for small screens when chat is hidden
+            // Ensure this placeholder is only rendered when showChat is false AND screen is small.
+            // The outer div's class handles opacity for lg screens, but for small screens, this block is chosen.
+            // The logic `showChat || window.innerWidth >= 1024` means this else branch is hit when
+            // `!(showChat || window.innerWidth >= 1024)` which is `!showChat && window.innerWidth < 1024`.
+            // So, the `lg:hidden` class on the placeholder is correct as it should not appear on large screens.
+            // The `${showChat ? 'hidden' : 'block'}` within its className is also correct for toggling on small screens.
             <div className={`lg:hidden ${showChat ? 'hidden' : 'block'} bg-gradient-to-br from-purple-600 via-indigo-500 to-blue-500 rounded-xl p-6 text-white shadow-xl animate-fade-in`}>
               <div className="flex items-center space-x-3 mb-4">
                 <Sparkles className="w-6 h-6" />
@@ -263,7 +268,7 @@ const BlogEditor = () => {
                 Open AI Chat
               </Button>
             </div>
-          ) : null }
+          )} {/* End of the ternary operator. The `: null }` was here. */}
         </div>
       </div>
 
