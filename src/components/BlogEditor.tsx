@@ -14,6 +14,7 @@ const BlogEditor = () => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [blogContent, setBlogContent] = useState('');
   const [selectedText, setSelectedText] = useState('');
+  const [shouldFocusChat, setShouldFocusChat] = useState(false); // New state to trigger focus
   const [blogTitle, setBlogTitle] = useState('Dr. APJ Abdul Kalam: The People\'s President');
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
@@ -56,6 +57,16 @@ const BlogEditor = () => {
     if (blogContent.includes(selectedText)) {
       setBlogContent(blogContent.replace(selectedText, formattedText));
       setSelectedText('');
+    }
+  };
+
+  const handleTextSelect = (text: string) => {
+    setSelectedText(text);
+    if (text) {
+      setShowChat(true); // Auto-show chat when text is selected
+      setShouldFocusChat(true); // Signal AIChat to focus
+    } else {
+      setShouldFocusChat(false); // Reset focus signal
     }
   };
 
@@ -122,70 +133,59 @@ const BlogEditor = () => {
                   onChange={(e) => setBlogTitle(e.target.value)}
                   className="text-lg font-semibold text-gray-900 border-none focus-visible:ring-0 px-0 max-w-[300px]"
                 />
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-1 border-r pr-2 mr-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => formatText('bold')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Bold className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => formatText('italic')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Italic className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => formatText('h1')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Heading1 className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => formatText('h2')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Heading2 className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => formatText('link')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Link className="w-4 h-4" />
-                    </Button>
+                <div className="flex flex-wrap items-center gap-1 sm:gap-2"> {/* Flex-wrap for responsiveness */}
+                  {/* Formatting Buttons Group */}
+                  <div className="flex items-center space-x-0.5 sm:space-x-1 border-r border-slate-300 pr-1 sm:pr-2 mr-1 sm:mr-2">
+                    {[
+                      { action: 'bold', icon: Bold, label: 'Bold' },
+                      { action: 'italic', icon: Italic, label: 'Italic' },
+                      { action: 'h1', icon: Heading1, label: 'H1' },
+                      { action: 'h2', icon: Heading2, label: 'H2' },
+                      { action: 'link', icon: Link, label: 'Link' },
+                    ].map(btn => (
+                      <Button
+                        key={btn.action}
+                        variant="ghost"
+                        size="icon" // Standardized icon button size
+                        onClick={() => formatText(btn.action)}
+                        className="h-8 w-8 p-0 text-slate-600 hover:text-indigo-600 hover:bg-slate-200/50"
+                        title={btn.label}
+                      >
+                        <btn.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </Button>
+                    ))}
                   </div>
-                  <button
+                  {/* Action Buttons */}
+                  <Button
                     onClick={() => setShowTemplates(!showTemplates)}
-                    className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-indigo-600"
                   >
-                    <FileText className="w-4 h-4" />
-                    <span className="text-sm">Templates</span>
-                  </button>
-                  <button
-                    onClick={() => setShowChat(!showChat)}
-                    className="flex items-center space-x-2 px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors"
+                    <FileText className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Templates</span>
+                  </Button>
+                  <Button
+                    onClick={() => {
+                        setShowChat(prev => !prev);
+                        if(!showChat) setShouldFocusChat(true); // Focus if opening
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className={`border-slate-300 text-slate-700 hover:text-indigo-600 hover:bg-slate-100 ${showChat ? 'bg-indigo-100 text-indigo-700' : ''}`}
                   >
-                    <MessageSquare className="w-4 h-4" />
-                    <span className="text-sm">AI Chat</span>
-                  </button>
+                    <MessageSquare className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">AI Chat</span>
+                  </Button>
                   <Button
                     onClick={handlePublish}
-                    variant="default"
-                    className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                    variant="default" // Shadcn default (primary)
+                    size="sm"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
-                    <Share2 className="w-4 h-4" />
-                    <span className="text-sm">Publish</span>
+                    <Share2 className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Publish</span>
+                    <span className="sm:hidden">Pub</span> {/* Short text for mobile */}
                   </Button>
                 </div>
               </div>
@@ -201,46 +201,69 @@ const BlogEditor = () => {
             <WritingArea 
               content={blogContent} 
               onContentChange={setBlogContent}
-              onTextSelect={setSelectedText}
+              onTextSelect={handleTextSelect}
               title={blogTitle}
             />
           </div>
         </div>
 
         {/* AI Chat Panel */}
-        <div className="lg:col-span-1">
-          <div className={`transition-all duration-300 ${showChat ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-4 pointer-events-none'}`}>
-            <AIChat 
-              selectedText={selectedText}
-              onApplyEdit={(editedText) => {
-                if (selectedText) {
-                  setBlogContent(blogContent.replace(selectedText, editedText));
-                  setSelectedText('');
-                } else {
-                  // If no text is selected, append or set the content
-                  setBlogContent(editedText);
-                }
-              }}
-            />
-          </div>
-          
-          {!showChat && (
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white animate-fade-in">
+        {/* Conditional rendering now handles visibility, sticky positioning for large screens */}
+        <div className={`lg:col-span-1 lg:sticky lg:top-8 transition-opacity duration-300 ease-in-out ${showChat ? 'opacity-100' : 'opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto'}`}>
+          {showChat || window.innerWidth >= 1024 ? ( // Always render on lg screens for layout, control visibility via opacity/pointer-events
+             <AIChat
+                selectedText={selectedText}
+                shouldFocus={shouldFocusChat} // Pass focus trigger
+                onFocusHandled={() => setShouldFocusChat(false)} // Callback to reset trigger
+                onApplyEdit={(editedText) => {
+                  if (selectedText) {
+                    // A more robust way to replace only the specific instance of selected text
+                    // This is still simplified. For true robustness, unique IDs or Range objects would be needed.
+                    const parts = blogContent.split(selectedText);
+                    if (parts.length > 1) {
+                        // For simplicity, replace the first occurrence.
+                        // A real implementation might need to identify which selection it was.
+                        setBlogContent(parts.join(editedText));
+                    } else {
+                         setBlogContent(blogContent.replace(selectedText, editedText));
+                    }
+                    setSelectedText(''); // Clear selection after applying
+                  } else {
+                    // If no text is selected, append the new content
+                    // A more sophisticated approach might involve inserting at cursor,
+                    // but that requires more complex interaction with WritingArea.
+                    setBlogContent(prevContent => {
+                      // Add a separator if prevContent is not empty
+                      const separator = prevContent.trim() === '' ? '' : '\n<p><br></p>\n';
+                      return prevContent + separator + editedText;
+                    });
+                  }
+                  setShowChat(true); // Keep chat open after applying edit
+                }}
+              />
+            </div>
+          ) : (
+            // Placeholder for small screens when chat is hidden
+            <div className={`lg:hidden ${showChat ? 'hidden' : 'block'} bg-gradient-to-br from-purple-600 via-indigo-500 to-blue-500 rounded-xl p-6 text-white shadow-xl animate-fade-in`}>
               <div className="flex items-center space-x-3 mb-4">
                 <Sparkles className="w-6 h-6" />
-                <h3 className="font-semibold">AI Writing Assistant</h3>
+                <h3 className="text-lg font-semibold">AI Writing Assistant</h3>
               </div>
-              <p className="text-sm text-purple-100 mb-4">
-                Click "AI Chat" to start writing with AI assistance. Highlight any text to edit it with natural language commands.
+              <p className="text-sm text-purple-100 mb-6">
+                Select text in the editor or click "Open AI Chat" to get AI suggestions.
               </p>
-              <button
-                onClick={() => setShowChat(true)}
-                className="w-full bg-white/20 hover:bg-white/30 text-white py-2 px-4 rounded-lg transition-colors"
+              <Button
+                onClick={() => {
+                  setShowChat(true);
+                  setShouldFocusChat(true);
+                }}
+                variant="outline"
+                className="w-full bg-white/10 hover:bg-white/20 border-white/30 text-white transition-colors"
               >
-                Get Started
-              </button>
+                Open AI Chat
+              </Button>
             </div>
-          )}
+          ) : null }
         </div>
       </div>
 

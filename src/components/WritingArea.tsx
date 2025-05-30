@@ -1,5 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
 
 interface WritingAreaProps {
   content: string;
@@ -12,20 +13,67 @@ const WritingArea = ({ content, onContentChange, onTextSelect, title = 'Your Blo
   const editorRef = useRef<HTMLDivElement>(null);
   const [isEmpty, setIsEmpty] = useState(!content);
 
-  // Safe way to handle content updates
+  // Effect to update editor when 'content' prop changes (e.g. from AI)
   useEffect(() => {
     if (editorRef.current) {
-      // Only update the innerHTML if content has changed to avoid unnecessary rerenders
       if (content && editorRef.current.innerHTML !== content) {
-        editorRef.current.innerHTML = content;
+        // Sanitize content coming from props as well, just in case
+        const sanitizedContent = DOMPurify.sanitize(content, {
+          USE_PROFILES: { html: true },
+          ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'blockquote', 'a'],
+          ALLOWED_ATTR: ['href', 'target', 'rel']
+        });
+        editorRef.current.innerHTML = sanitizedContent;
         setIsEmpty(false);
-      } else if (!content) {
-        // Clear the editor if content is empty
+      } else if (!content && editorRef.current.innerHTML !== '') {
         editorRef.current.innerHTML = '';
         setIsEmpty(true);
       }
     }
   }, [content]);
+
+  // Effect to handle paste events
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const handlePaste = (event: ClipboardEvent) => {
+      event.preventDefault();
+      let pasteContent = '';
+      if (event.clipboardData) {
+        const html = event.clipboardData.getData('text/html');
+        const text = event.clipboardData.getData('text/plain');
+
+        if (html) {
+          pasteContent = html;
+        } else if (text) {
+          // Convert plain text newlines to <br> for basic formatting
+          pasteContent = text.replace(/\n/g, '<br>');
+        }
+      }
+
+      const sanitizedHtml = DOMPurify.sanitize(pasteContent, {
+        USE_PROFILES: { html: true }, // Allows basic HTML structure
+        ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'blockquote', 'a'],
+        ALLOWED_ATTR: ['href', 'target', 'rel'] // Allow links
+      });
+
+      // Ensure execCommand is supported and enabled
+      if (document.queryCommandSupported('insertHTML') && document.queryCommandEnabled('insertHTML')) {
+        document.execCommand('insertHTML', false, sanitizedHtml);
+      } else {
+        // Fallback for browsers that might not support execCommand or insertHTML well
+        // This is a simplified fallback; a more robust solution might involve Range/Selection APIs
+        editor.innerHTML += sanitizedHtml;
+      }
+      onContentChange(editor.innerHTML); // Update parent state
+    };
+
+    editor.addEventListener('paste', handlePaste);
+    return () => {
+      editor.removeEventListener('paste', handlePaste);
+    };
+  }, [onContentChange]);
 
   const handleInput = () => {
     if (editorRef.current) {

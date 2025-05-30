@@ -1,140 +1,148 @@
-import React, { useState } from 'react';
-import { Send, Sparkles, Copy, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Sparkles, Copy, Check, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { HfInference } from '@huggingface/inference';
+import fetch from 'node-fetch';
+
+// Polyfill fetch for Node.js environment if not already available
+if (typeof window === 'undefined' && typeof global.fetch === 'undefined') {
+  global.fetch = fetch as any;
+}
 
 interface AIChatProps {
   selectedText: string;
   onApplyEdit: (editedText: string) => void;
+  shouldFocus?: boolean;
+  onFocusHandled?: () => void;
 }
 
-const AIChat = ({ selectedText, onApplyEdit }: AIChatProps) => {
-  const [messages, setMessages] = useState<Array<{ type: 'user' | 'ai'; content: string; action?: string }>>([
-    {
-      type: 'ai',
-      content: "Hi! I'm your AI writing assistant. I can help you:\n\n• Generate blog posts from topics\n• Edit selected text with natural language\n• Suggest headlines and improvements\n• Rewrite content in different tones\n\nJust tell me what you need!"
-    }
-  ]);
+const AIChat = ({ selectedText, onApplyEdit, shouldFocus, onFocusHandled }: AIChatProps) => {
+  const [messages, setMessages] = useState<Array<{ type: 'user' | 'ai'; content: string; action?: string }>>([]);
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const { toast } = useToast();
+  const [hf, setHf] = useState<HfInference | null>(null);
+  const [apiTokenAvailable, setApiTokenAvailable] = useState(true); // New state
+  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Initial message setup and focus handling
+  useEffect(() => {
+    setMessages([
+      {
+        type: 'ai',
+        content: selectedText
+          ? `Editing: "${selectedText.substring(0, 50)}..."\nHow can I help you refine this?`
+          : "Hi! I'm your AI writing assistant. Ask me to write, edit, or suggest improvements!"
+      }
+    ]);
+    if (selectedText && inputRef.current) {
+      // No auto-focus here, wait for shouldFocus prop
+    }
+  }, [selectedText]);
+
+  useEffect(() => {
+    if (shouldFocus && inputRef.current) {
+      inputRef.current.focus();
+      if (onFocusHandled) {
+        onFocusHandled(); // Notify parent that focus has been handled
+      }
+    }
+  }, [shouldFocus, onFocusHandled]);
+
+  useEffect(() => {
+    // Initialize HfInference client-side
+    if (typeof window !== 'undefined') {
+      const token = process.env.NEXT_PUBLIC_HUGGINGFACE_API_TOKEN || process.env.REACT_APP_HUGGINGFACE_API_TOKEN;
+      if (!token) {
+        setApiTokenAvailable(false);
+        toast({
+          title: "API Token Missing",
+          description: "Hugging Face API token is not configured. AI features will be unavailable.",
+          variant: "destructive",
+          duration: Infinity, // Keep visible until dismissed
+        });
+        setMessages([{ type: 'ai', content: "AI features are unavailable. API token is missing." }]);
+      } else {
+        setApiTokenAvailable(true);
+        const hfInstance = new HfInference(token);
+        setHf(hfInstance);
+      }
+    }
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !hf) return;
 
-    const userMessage = input;
-    setInput('');
-    setMessages(prev => [...prev, { type: 'user', content: userMessage }]);
+    const userMessageContent = input;
+    // Update placeholder if selectedText is present with the new command
+    if (selectedText && inputRef.current) {
+        inputRef.current.placeholder = `Editing "${selectedText.substring(0,30)}..."`;
+    }
+    setInput(''); // Clear input after sending
+    const newMessages = [...messages, { type: 'user' as 'user', content: userMessageContent }];
+    setMessages(newMessages);
     setIsGenerating(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      let aiResponse = '';
-      let action = '';
+    let aiResponseContent = '';
+    let actionContent = '';
 
+    try {
+      const hfChatMessages = newMessages.map(msg => ({ // Use current messages for history
+        role: msg.type, // Role is already 'user' or 'ai'
+        content: msg.content,
+      }));
+
+      // Add system prompt if selectedText is present to guide the AI for editing
+      let systemPrompt;
       if (selectedText) {
-        // Editing mode
-        if (userMessage.toLowerCase().includes('bold')) {
-          aiResponse = `I'll make the selected text bold: <strong>${selectedText}</strong>`;
-          action = `<strong>${selectedText}</strong>`;
-        } else if (userMessage.toLowerCase().includes('heading')) {
-          aiResponse = `I'll turn the selected text into a heading: <h2>${selectedText}</h2>`;
-          action = `<h2>${selectedText}</h2>`;
-        } else if (userMessage.toLowerCase().includes('concise')) {
-          const conciseText = selectedText.length > 50 ? selectedText.substring(0, 50) + '...' : selectedText;
-          aiResponse = `Here's a more concise version: "${conciseText}"`;
-          action = conciseText;
-        } else {
-          aiResponse = `I'll help you edit: "${selectedText}". Here's an improved version with better flow and clarity.`;
-          action = selectedText + ' (Enhanced with better clarity and flow)';
-        }
-      } else {
-        // Content generation mode
-        if (userMessage.toLowerCase().includes('blog about') || 
-            userMessage.toLowerCase().includes('write about') ||
-            userMessage.toLowerCase().includes('write a post on') ||
-            userMessage.toLowerCase().includes('post on') ||
-            userMessage.toLowerCase().includes('blog on')) {
-          
-          // Extract the topic from the user message
-          let topic = '';
-          if (userMessage.toLowerCase().includes('blog about')) {
-            topic = userMessage.split(/blog about/i)[1]?.trim() || 'technology';
-          } else if (userMessage.toLowerCase().includes('write about')) {
-            topic = userMessage.split(/write about/i)[1]?.trim() || 'technology';
-          } else if (userMessage.toLowerCase().includes('write a post on')) {
-            topic = userMessage.split(/write a post on/i)[1]?.trim() || 'technology';
-          } else if (userMessage.toLowerCase().includes('post on')) {
-            topic = userMessage.split(/post on/i)[1]?.trim() || 'technology';
-          } else if (userMessage.toLowerCase().includes('blog on')) {
-            topic = userMessage.split(/blog on/i)[1]?.trim() || 'technology';
-          }
-          
-          // Generate content based on the topic
-          if (topic.toLowerCase() === 'abdul kalam') {
-            aiResponse = `I've written a blog post about Dr. APJ Abdul Kalam with proper formatting. You can apply it to the editor.`;
-            action = `<h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #333;">Dr. APJ Abdul Kalam: The People's President and Visionary Scientist</h1>
-
-<p>Dr. Avul Pakir Jainulabdeen Abdul Kalam, fondly remembered as the <strong>"People's President"</strong> and the <strong>"Missile Man of India,"</strong> was a remarkable individual whose contributions to India spanned science, education, and leadership. Born on October 15, 1931, in Rameswaram, Tamil Nadu, Dr. Kalam's journey from a humble beginning to becoming India's 11th President is a testament to his brilliance, perseverance, and unwavering commitment to national development.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Early Life and Education</h2>
-<p>Coming from a modest background, young Kalam displayed an insatiable curiosity and strong work ethic from an early age. Despite financial constraints, he pursued his education with passion, graduating in physics from Saint Joseph's College and later specializing in aerospace engineering from the Madras Institute of Technology. These formative years laid the foundation for his future scientific endeavors.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Contributions to Indian Space and Defense Programs</h2>
-<p>Dr. Kalam's career at the <strong>Defence Research and Development Organisation (DRDO)</strong> and later at the <strong>Indian Space Research Organisation (ISRO)</strong> marked the beginning of India's self-reliance in defense technology. As the chief architect of India's first satellite launch vehicle (SLV-III), he successfully deployed the Rohini satellite in near-Earth orbit in 1980, establishing India's presence in space technology.</p>
-
-<p>His most significant contribution came as the leader of India's missile development program. Under his guidance, India developed strategic missiles like <strong>Agni</strong> and <strong>Prithvi</strong>, earning him the title "Missile Man of India." His leadership in the Pokhran-II nuclear tests in 1998 further solidified India's position as a nuclear state.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Presidency and Vision for India</h2>
-<p>Dr. Kalam's presidency from 2002 to 2007 was characterized by his vision of transforming India into a developed nation by 2020. His concept of <strong>"PURA"</strong> (Providing Urban Amenities in Rural Areas) aimed at bridging the urban-rural divide and fostering inclusive growth. As President, he was known for his accessibility, simplicity, and deep connection with the youth, whom he saw as the architects of future India.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Legacy as an Educator and Inspiration</h2>
-<p>Post-presidency, Dr. Kalam devoted himself to his passion for teaching and inspiring the youth. He traveled extensively across India, visiting schools and colleges, igniting young minds with his speeches about dreams, innovation, and nation-building. His books, particularly <em>"Wings of Fire"</em> and <em>"Ignited Minds,"</em> continue to inspire millions worldwide.</p>
-
-<p>Dr. Kalam's vision extended beyond scientific advancements. He emphasized the importance of ethical leadership, sustainable development, and inclusive growth. His "Vision 2020" outlined a roadmap for India's development, focusing on education, healthcare, infrastructure, and technology.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Personal Life and Values</h2>
-<p>Dr. Kalam led a simple and disciplined life, embodying the values of integrity, humility, and dedication. He was a vegetarian, played the veena (a traditional Indian instrument), wrote poetry, and practiced both Islam and Hinduism, symbolizing India's secular ethos. His personal library reflected his diverse interests, from science and technology to philosophy and spirituality.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Final Journey</h2>
-<p>On July 27, 2015, while doing what he loved most—addressing students at IIM Shillong—Dr. Kalam collapsed and passed away due to a cardiac arrest. His death was mourned across India and the world, with tributes pouring in from leaders, scientists, and citizens alike.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Conclusion</h2>
-<p>Dr. APJ Abdul Kalam's life journey epitomizes the power of dreams, determination, and dedication. From a newspaper boy to a renowned scientist and the President of the world's largest democracy, his life inspires us to dream big and work relentlessly toward our goals. His vision for India continues to guide the nation's development trajectory.</p>
-
-<p>In his own words, <strong>"Dream, dream, dream. Dreams transform into thoughts and thoughts result in action."</strong> This philosophy continues to resonate with millions, making Dr. Kalam immortal in the hearts of people, especially the youth whom he so dearly loved and inspired.</p>`;
-          } else {
-            aiResponse = `I'll generate a properly formatted blog post about ${topic}. Here's a complete article:`;
-            action = `<h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #333;">The Future of ${topic}</h1>
-
-<p>In today's rapidly evolving digital landscape, <strong>${topic}</strong> continues to shape our world in unprecedented ways. This comprehensive guide explores the key aspects and future implications.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Introduction</h2>
-<p>As we advance into a new era, understanding <strong>${topic}</strong> becomes crucial for both individuals and businesses alike.</p>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Key Benefits</h2>
-<ul style="margin-left: 1.5rem; list-style-type: disc;">
-<li>Enhanced efficiency and productivity</li>
-<li>Improved user experience</li>
-<li>Cost-effective solutions</li>
-<li>Scalable implementation</li>
-</ul>
-
-<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #444;">Conclusion</h2>
-<p>The future of <strong>${topic}</strong> looks promising, with endless possibilities for innovation and growth. By staying informed and adapting to these changes, we can harness its full potential.</p>`;
-          }
-          
-        } else if (userMessage.toLowerCase().includes('headline')) {
-          aiResponse = "Here are some engaging headline suggestions:";
-          action = "• 10 Game-Changing Strategies That Will Transform Your Business\n• The Ultimate Guide to Mastering Modern Challenges\n• Why Industry Leaders Are Making This Surprising Move";
-        } else {
-          aiResponse = "I'm here to help! You can ask me to generate blog content, edit selected text, or suggest improvements. Try highlighting some text and asking me to make it bold, turn it into a heading, or rewrite it in a different tone.";
-        }
+        systemPrompt = `You are an AI assistant helping a user edit a piece of text. The selected text is: "${selectedText}". The user's request is: "${userMessageContent}". Provide a response that directly addresses the editing task. If you are providing the edited text, ensure it's clearly distinguishable.`;
       }
 
-      setMessages(prev => [...prev, { type: 'ai', content: aiResponse, action }]);
-      setIsGenerating(false);
-    }, 1500);
+      const apiMessages = systemPrompt
+          ? [{role: 'system', content: systemPrompt}, ...hfChatMessages]
+          : hfChatMessages;
+
+      const response = await hf.chatCompletion({
+        model: 'meta-llama/Meta-Llama-3.1-7B-Instruct',
+        messages: apiMessages,
+        max_tokens: 500,
+        temperature: 0.7,
+        top_p: 0.9,
+      });
+
+      if (response.choices && response.choices.length > 0 && response.choices[0].message) {
+        aiResponseContent = response.choices[0].message.content || "Sorry, I couldn't generate a response.";
+      } else if (typeof (response as any).generated_text === 'string') {
+        aiResponseContent = (response as any).generated_text;
+      } else {
+        aiResponseContent = "Sorry, I received an unexpected response format.";
+        console.warn("Unexpected API response format:", response);
+      }
+      actionContent = aiResponseContent;
+
+    } catch (error) {
+      console.error("Error calling Hugging Face API:", error);
+      aiResponseContent = "Sorry, I encountered an error. Please try again. Details: " + (error as Error).message;
+      actionContent = '';
+      toast({
+        title: "API Error",
+        description: `Could not connect to the AI model. ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    }
+
+    setMessages(prev => [...prev, { type: 'ai', content: aiResponseContent, action: actionContent }]);
+    setIsGenerating(false);
   };
 
   const handleApplyEdit = (action: string) => {
@@ -156,58 +164,74 @@ const AIChat = ({ selectedText, onApplyEdit }: AIChatProps) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-[600px] flex flex-col">
-      <div className="border-b border-gray-200 p-4">
+    <div className="bg-slate-50 rounded-xl shadow-xl border border-slate-200 flex flex-col max-h-[calc(100vh-100px)] lg:max-h-[70vh] h-full">
+      {/* Header */}
+      <div className="border-b border-slate-200 p-4">
         <div className="flex items-center space-x-2">
-          <Sparkles className="w-5 h-5 text-purple-600" />
-          <h3 className="font-semibold text-gray-900">AI Assistant</h3>
+          <MessageSquare className="w-6 h-6 text-indigo-600" />
+          <h3 className="text-lg font-semibold text-slate-800">AI Assistant</h3>
         </div>
         {selectedText && (
-          <div className="mt-2 p-2 bg-purple-50 rounded text-sm text-purple-700">
-            Selected: "{selectedText.substring(0, 30)}..."
+          <div className="mt-2 p-2 bg-indigo-50 rounded-md text-sm text-indigo-700">
+            <span className="font-medium">Editing:</span> "{selectedText.substring(0, 50)}..."
           </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100/50">
         {messages.map((message, index) => (
           <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-3 rounded-lg ${
+            <div className={`max-w-[85%] p-3 rounded-xl shadow-sm ${
               message.type === 'user' 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-gray-100 text-gray-900'
+                ? 'bg-indigo-600 text-white rounded-br-none'
+                : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
             }`}>
-              <div className="whitespace-pre-wrap text-sm">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed">
                 {message.content}
               </div>
-              {message.action && (
-                <div className="mt-2 pt-2 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => handleApplyEdit(message.action!)}
-                      className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors"
-                    >
-                      Apply Edit
-                    </button>
+              {message.action && message.type === 'ai' && (
+                <div className="mt-3 pt-3 border-t border-slate-200/70">
+                  <div className="flex items-center justify-end space-x-2">
                     <button
                       onClick={() => handleCopy(message.action!, index)}
-                      className="text-xs text-gray-600 hover:text-gray-800 flex items-center space-x-1"
+                      title="Copy response"
+                      className="text-xs text-slate-500 hover:text-indigo-600 flex items-center space-x-1 p-1 rounded hover:bg-slate-200/50 transition-colors"
                     >
-                      {copiedId === index ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedId === index ? 'Copied!' : 'Copy'}</span>
+                      {copiedId === index ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedId === index ? 'Copied' : 'Copy'}</span>
                     </button>
+                    {selectedText && ( // Only show Apply Edit if there was selected text initially
+                       <button
+                        onClick={() => handleApplyEdit(message.action!)}
+                        title="Apply this edit to your selected text"
+                        className="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm hover:shadow-md"
+                      >
+                        Apply Edit
+                      </button>
+                    )}
+                     {!selectedText && ( // Show "Insert" if it was a generation task
+                       <button
+                        onClick={() => handleApplyEdit(message.action!)}
+                        title="Insert this content into the editor"
+                        className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm hover:shadow-md"
+                      >
+                        Insert Content
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} /> {/* For scrolling to bottom */}
         
         {isGenerating && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-900 p-3 rounded-lg">
+            <div className="bg-white text-slate-700 p-3 rounded-xl shadow-sm border border-slate-200 rounded-bl-none">
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
                 <span className="text-sm">AI is thinking...</span>
               </div>
             </div>
@@ -215,22 +239,26 @@ const AIChat = ({ selectedText, onApplyEdit }: AIChatProps) => {
         )}
       </div>
 
-      <div className="border-t border-gray-200 p-4">
-        <div className="flex space-x-2">
+      {/* Input Area */}
+      <div className="border-t border-slate-200 p-3 bg-white">
+        <div className="flex items-center space-x-2">
           <input
+            ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={selectedText ? "How should I edit this text?" : "Ask me to write a blog about..."}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            onKeyPress={(e) => {if (e.key === 'Enter' && !isGenerating) {handleSend(); e.preventDefault();}}}
+            placeholder={!apiTokenAvailable ? "API token missing" : (selectedText ? `How to edit "${selectedText.substring(0,20)}..."?` : "Ask AI to write or suggest...")}
+            className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm"
+            disabled={isGenerating || !hf || !apiTokenAvailable}
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim() || isGenerating}
-            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white p-2 rounded-lg transition-colors"
+            disabled={!input.trim() || isGenerating || !hf || !apiTokenAvailable}
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white p-2.5 rounded-lg transition-colors shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            title="Send message"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-5 h-5" />
           </button>
         </div>
       </div>
